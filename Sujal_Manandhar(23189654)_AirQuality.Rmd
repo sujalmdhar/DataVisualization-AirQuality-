@@ -1,0 +1,574 @@
+---
+title: "Assessment 2 (Air Quality Dataset)"
+author: "Sujal Manandhar (23189654)"
+output: html_notebook
+---
+
+# Part 1: Data Preprocessing and Handling Missing Values
+
+### Task 1.1: Loading Libraries
+
+### Task Details: Load all the necessary libraries required for data manipulation, visualization, and analysis.
+```{r}
+# Define a color palette
+my_colors <- c("blue", "darkblue", "orange", "red", "green")
+
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(naniar)
+library(ggthemes)
+library(corrplot)
+library(reshape2)
+library(lubridate)
+```
+
+### Task 1.2: Load and Explore the Dataset
+
+### Task Details: Load the dataset from a CSV file and view the first few rows to understand its structure and the variables included.
+```{r}
+# Load the dataset
+data <- read.csv("AirQuality.csv")
+
+# View the first few rows
+head(data)
+```
+### Task 1.3: Missing Values Summary
+
+### Task Details: Calculate and summarize the number of missing values for each column in the dataset to assess the extent of missing data.
+```{r}
+# Check for missing values
+missing_data_summary <- colSums(is.na(data))
+print("Missing Values Summary:")
+print(missing_data_summary)
+```
+### Task 1.4: Check for Duplicate Values
+
+### Task Details: Identify and summarize the number of duplicate rows in the dataset.
+```{r}
+# Check for duplicate rows
+duplicate_rows <- sum(duplicated(data))
+print("Number of Duplicate Rows:")
+print(duplicate_rows)
+```
+
+
+### Task 1.5: Visualize Missing Values
+
+### Task Details: Create a heatmap visualization of the missing values in the dataset to quickly identify patterns of missingness.
+```{r}
+# Visualize missing values using a heatmap
+gg_miss_var(data) +
+  theme_minimal() +
+  ggtitle("Missing Values Heatmap")
+```
+
+Interpretation: The following heatmap shows missing data, allowing us to quickly assess gaps that need to be addressed during data cleaning.
+
+# Part 2: Distribution and Comparison of AQI
+
+### Task 2.1: Distribution of AQI Values
+
+### Task Details: Visualize the frequency distribution of AQI values using a histogram to understand how these values are spread across different ranges.
+```{r}
+# Visualizing the distribution of AQI Values
+ggplot(data, aes(x = `AQI.Value`)) +
+  geom_histogram(binwidth = 10, fill = my_colors[1], color = "black") +
+  theme_minimal() +
+  ggtitle("Distribution of AQI Values") +
+  xlab("AQI Value") +
+  ylab("Frequency")
+```
+Interpretation: The histogram below shows the frequency distribution of AQI values. This helps in understanding how AQI values are distributed and identifying any patterns of air quality.
+
+### Task 2.2: AQI Categories
+
+### Task Details: Create a bar chart to visualize the distribution of different AQI categories, providing insight into the classification of air quality levels.
+```{r}
+# Define a color palette with 6 colors
+my_colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b")
+
+# Visualizing AQI Categories with corrected color palette
+ggplot(data, aes(x = `AQI.Category`, fill = `AQI.Category`)) +
+  geom_bar() +
+  theme_minimal() +
+  ggtitle("Distribution of AQI Categories") +
+  xlab("AQI Category") +
+  ylab("Count") +
+  scale_fill_manual(values = my_colors) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Interpretation: The bar chart shows the distribution of different AQI categories. This visual helps understand the air quality classification across the dataset.
+
+### Task 2.3: Boxplot of AQI Values by AQI Category
+
+### Task Details: Generate a boxplot to display the distribution of AQI values within each category, allowing for the identification of variability and outliers.
+```{r}
+# Define a color palette with 6 colors
+my_colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b")
+
+ggplot(data, aes(x = `AQI.Category`, y = `AQI.Value`, fill = `AQI.Category`)) +
+  geom_boxplot() +
+  theme_minimal() +
+  ggtitle("Boxplot of AQI Values by AQI Category") +
+  xlab("AQI Category") +
+  ylab("AQI Value") +
+  scale_fill_manual(values = my_colors) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+Interpretation: This boxplot highlights the distribution of AQI values within each category. Some AQI categories have greater variability than others, showing that extreme air quality events may occur more frequently in specific categories.
+
+# Part 3: Geographic Analysis
+
+### Task 3.1: Geographic Distribution of AQI
+
+### Task Details: Visualize the geographical distribution of AQI levels using a scatter plot with latitude and longitude coordinates, colored by AQI values.
+```{r}
+# Visualizing Air Quality by Location (Latitude vs Longitude, color-coded by AQI)
+ggplot(data, aes(x = lng, y = lat, color = `AQI.Value`)) +
+  geom_point(alpha = 0.7) +
+  scale_color_gradient(low = my_colors[1], high = my_colors[2]) +
+  theme_minimal() +
+  ggtitle("Geographical Distribution of AQI") +
+  xlab("Longitude") +
+  ylab("Latitude")
+
+```
+Interpretation: This scatter plot shows AQI levels distributed across geographic coordinates (latitude and longitude). High AQI values can be identified in specific regions.
+
+### Task 3.2: Top 20 Countries by Average AQI Value
+
+### Task Details: Visualize top 20 countries by average AQI to display air pollution levels clearly, avoiding overcrowded labels for better readability.
+```{r}
+# Visualizing the average AQI Value by Country
+data %>% 
+  group_by(Country) %>%
+  summarise(Average_AQI = mean(AQI.Value, na.rm = TRUE)) %>%
+  arrange(desc(Average_AQI)) %>%
+  top_n(20) %>%  # Show top 20 countries
+  ggplot(aes(x = reorder(Country, Average_AQI), y = Average_AQI)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  coord_flip() +
+  theme_minimal() +
+  ggtitle("Top 20 Countries by Average AQI Value") +
+  xlab("Country") +
+  ylab("Average AQI Value")
+```
+Interpretation: This bar plot shows the average AQI value per country, revealing which countries have higher air pollution levels on average.
+
+### Task 3.3: Heatmap of AQI Values by City
+
+### Task Details: Create a heatmap showing the average AQI values for different cities, highlighting areas with poor air quality.
+```{r}
+city_aqi <- data %>% 
+  group_by(City) %>%
+  summarise(Average_AQI = mean(AQI.Value, na.rm = TRUE))
+
+ggplot(city_aqi, aes(x = reorder(City, Average_AQI), y = Average_AQI, fill = Average_AQI)) +
+  geom_tile() +
+  scale_fill_gradient(low = my_colors[1], high = my_colors[2]) +
+  theme_minimal() +
+  ggtitle("Heatmap of AQI Values by City") +
+  xlab("City") +
+  ylab("Average AQI Value") +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+```
+Interpretation: The heatmap visualizes cities with varying AQI levels, highlighting hotspots with persistently poor air quality.
+
+# Part 4: Correlation Between Pollutants
+
+### Task 4.1: Correlation Matrix of Pollutants
+
+### Task Details: Generate a correlation matrix to explore the relationships between AQI values for different pollutants and visualize it using a correlation plot.
+```{r}
+# Correlation Matrix of AQI Values
+numeric_data <- data %>% 
+  select(`AQI.Value`, `CO.AQI.Value`, `Ozone.AQI.Value`, `NO2.AQI.Value`, `PM2.5.AQI.Value`)
+
+cor_matrix <- cor(numeric_data, use = "complete.obs")
+corrplot(cor_matrix, method = "color", type = "upper", 
+         tl.col = "black", tl.srt = 45, 
+         addCoef.col = "black", number.cex = 0.7)
+
+```
+Interpretation: The correlation matrix below shows the relationships between AQI values for different pollutants. High correlations between pollutants can indicate their contribution to overall AQI levels.
+
+### Task 4.2: Scatter Plot of AQI vs CO AQI
+
+### Task Details: Create a scatter plot comparing CO AQI values against overall AQI values to analyze the impact of CO on air quality.
+```{r}
+ggplot(data, aes(x = `CO.AQI.Value`, y = `AQI.Value`)) +
+  geom_point(color = my_colors[1], alpha = 0.6) +
+  theme_minimal() +
+  ggtitle("Scatter Plot of CO AQI Value vs AQI Value") +
+  xlab("CO AQI Value") +
+  ylab("AQI Value")
+
+```
+Interpretation: This scatter plot compares CO AQI values against overall AQI values, helping to assess the contribution of CO to air quality.
+
+### Task 4.3: Scatter Plot with Trend Line (AQI vs PM2.5 AQI)
+
+### Task Details: Visualize the relationship between PM2.5 AQI and overall AQI using a scatter plot with a trend line to identify their correlation.
+```{r}
+ggplot(data, aes(x = `PM2.5.AQI.Value`, y = `AQI.Value`)) +
+  geom_point(color = my_colors[1], alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  theme_minimal() +
+  ggtitle("Scatter Plot with Trend Line (AQI vs PM2.5 AQI)") +
+  xlab("PM2.5 AQI Value") +
+  ylab("AQI Value")
+
+```
+Interpretation: This plot shows a strong positive relationship between PM2.5 AQI and overall AQI, indicating that PM2.5 is a major contributor to poor air quality.
+
+### Task 4.4: Average AQI Values for Top Pollutants
+
+### Task Details: Analyze and visualize the average AQI values for different pollutants to identify major contributors to poor air quality. This will help in understanding which pollutants have a more significant impact on overall air quality levels.
+```{r}
+# Summarize average AQI values for each pollutant
+pollutant_aqi <- data %>% 
+  summarise(
+    CO_AQI = mean(`CO.AQI.Value`, na.rm = TRUE),
+    Ozone_AQI = mean(`Ozone.AQI.Value`, na.rm = TRUE),
+    NO2_AQI = mean(`NO2.AQI.Value`, na.rm = TRUE),
+    PM2.5_AQI = mean(`PM2.5.AQI.Value`, na.rm = TRUE)
+  )
+
+# Reshape data for plotting
+pollutant_aqi_long <- pollutant_aqi %>%
+  pivot_longer(cols = everything(), names_to = "Pollutant", values_to = "Average_AQI")
+
+# Plotting the average AQI values for each pollutant
+ggplot(pollutant_aqi_long, aes(x = reorder(Pollutant, Average_AQI), y = Average_AQI, fill = Pollutant)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  ggtitle("Average AQI Values for Top Pollutants") +
+  xlab("Pollutant") +
+  ylab("Average AQI Value") +
+  scale_fill_manual(values = my_colors) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Interpretation:This bar plot illustrates the average AQI values for key pollutants including CO, Ozone, NO2, and PM2.5. By visualizing these values, we can identify which pollutants contribute most significantly to poor air quality. Higher average AQI values for specific pollutants indicate that they are more prevalent or harmful in the studied areas, guiding future environmental policy and health recommendations. Understanding the impact of these pollutants is crucial for implementing effective air quality management strategies.
+
+
+# Part 5: Analysis of Ozone Levels by City
+
+### Task 5.1: Faceted Plot: Ozone AQI Value by City, Faceted by AQI Category
+
+### Task Details: Create a faceted bar plot showing Ozone AQI values by city, organized by AQI category to assess ozone pollution across different cities.
+```{r}
+# Faceted Plot: Ozone AQI Value by City, Faceted by AQI Category
+ggplot(data, aes(x = City, y = `Ozone.AQI.Value`, fill = `Ozone.AQI.Category`)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ `Ozone.AQI.Category`) +
+  theme_minimal() +
+  ggtitle("Ozone AQI Value by City, Faceted by Ozone AQI Category") +
+  scale_fill_manual(values = my_colors) +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  xlab("City") +
+  ylab("Ozone AQI Value")
+
+```
+Interpretation: This plot identifies cities with high ozone pollution levels and groups them into AQI categories, offering insights into which cities suffer the most from ozone pollution.
+
+# Part 6: Seasonal Trend Analysis(Monthly Trends in AQI)
+
+### Task 6.1: Check the Column Names
+
+### Task Details: Verify the column names in the dataset to ensure that all expected columns are present.
+```{r}
+# Check column names
+colnames(data)
+```
+### Task 6.2: Create a Mock Date Column
+
+### Task Details: Since, my dataset doesn't have a "Date" column, we have to generate a mock date column using a sequence of dates, assuming daily intervals.
+```{r}
+# Creating a mock Date column assuming daily intervals from an arbitrary start date
+data$Date <- seq(from = as.Date("2006-01-01"), by = "day", length.out = nrow(data))
+```
+Result: This will create a new "Date" column starting from ("2006-01-01"), and the number of rows will match the number of observations in our dataset.
+
+### Task 6.3: Check Column Names After Adding Date
+
+### Task Details: Recheck the column names to confirm the successful addition of the new "Date" column.
+```{r}
+# Check column names again to ensure Date column exists
+colnames(data)
+```
+### Task 6.4: Create the Monthly Trend Plot
+
+### Task Details: Generate a line plot showing average AQI values by month to identify any seasonal trends or patterns in air quality over time.
+```{r}
+data$Date <- as.Date(data$Date)
+
+data %>%
+  mutate(Month = month(Date, label = TRUE)) %>%
+  group_by(Month) %>%
+  summarise(Average_AQI = mean(AQI.Value, na.rm = TRUE)) %>%
+  ggplot(aes(x = Month, y = Average_AQI, group = 1)) +
+  geom_line(color = my_colors[1]) +
+  geom_point(size = 3) +
+  theme_minimal() +
+  ggtitle("Monthly Trends in AQI") +
+  xlab("Month") +
+  ylab("Average AQI")
+
+```
+Interpretation: This line plot shows how AQI values change over the months. It helps reveal any seasonal trends or recurring patterns in air quality.
+
+### Task 6.5: AQI Categories Over the Years
+
+### Task Details: Create a line plot to visualize the average AQI values categorized by year, highlighting how different AQI categories fluctuate over time.
+```{r}
+# Creating a new column for Year
+data$Year <- year(data$Date)
+
+# Summarizing data by Year and AQI Category
+yearly_aqi_category <- data %>%
+  group_by(Year, `AQI.Category`) %>%
+  summarise(Average_AQI = mean(`AQI.Value`, na.rm = TRUE)) %>%
+  ungroup()
+
+# Plotting AQI Categories Over the Years
+ggplot(yearly_aqi_category, aes(x = Year, y = Average_AQI, color = `AQI.Category`, group = `AQI.Category`)) +
+  geom_line(size = 1) +
+  geom_point(size = 3) +
+  theme_minimal() +
+  ggtitle("Average AQI Categories Over the Years") +
+  xlab("Year") +
+  ylab("Average AQI Value") +
+  scale_color_manual(values = my_colors) +
+  theme(legend.title = element_blank())
+```
+Interpretation: This line plot will show how different AQI categories have fluctuated over the years, helping you to analyze trends and identify patterns in air quality. You can interpret whether certain years had worse air quality compared to others or if improvements were observed.
+
+# Part 7: Pollution Levels by Day of the Week
+
+### Task 7.1: Create a Day of the Week Column
+
+### Task Details: You can add a new column to your dataset that represents the day of the week based on the Date column:
+```{r}
+# Create a Day of the Week column
+data$DayOfWeek <- wday(data$Date, label = TRUE)
+```
+
+### Task 7.2: Calculate Average AQI by Day of the Week
+
+### Task Details: Next, summarize the data to calculate the average AQI values for each day of the week:
+```{r}
+# Calculate average AQI by Day of the Week
+avg_aqi_by_day <- data %>%
+  group_by(DayOfWeek) %>%
+  summarise(Average_AQI = mean(AQI.Value, na.rm = TRUE))
+```
+
+### Task 7.3: Plot the Average AQI by Day of the Week
+
+### Task Details: Create a bar chart to visualize this data
+```{r}
+# Plotting Average AQI by Day of the Week
+ggplot(avg_aqi_by_day, aes(x = DayOfWeek, y = Average_AQI, fill = DayOfWeek)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  ggtitle("Average AQI by Day of the Week") +
+  xlab("Day of the Week") +
+  ylab("Average AQI") +
+  scale_fill_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Interpretation: This plot will help you visualize how AQI levels vary across different days of the week. You can interpret trends, such as whether pollution levels are higher on weekdays compared to weekends, which could be useful for identifying patterns related to traffic, industrial activity, or other factors influencing air quality.
+
+# Part 8: How have PM\textsubscript{2.5} concentrations changed over time?
+
+### Task 8.1: Analyzing Changes in PM₂.5 Concentrations Over Time
+
+### Task Details: This task involves analyzing the trend of PM₂.5 concentrations over time. We will need to aggregate the PM₂.5 data by time intervals (e.g., daily, monthly, yearly) and create a time series plot to visualize how the concentrations have changed over the specified period.
+```{r}
+# Convert Date column to Date type if it is not already
+data$Date <- as.Date(data$Date)
+
+# Summarize PM2.5 concentrations by date (assuming there is a column for PM2.5 AQI)
+pm25_time_series <- data %>%
+  group_by(Date) %>%
+  summarise(Average_PM25 = mean(`PM2.5.AQI.Value`, na.rm = TRUE))
+
+# Plot PM2.5 concentrations over time
+ggplot(pm25_time_series, aes(x = Date, y = Average_PM25)) +
+  geom_line(color = "blue", size = 1) +
+  geom_point(color = "red", size = 1.5) +
+  theme_minimal() +
+  ggtitle("PM2.5 Concentrations Over Time") +
+  xlab("Date") +
+  ylab("Average PM2.5 AQI Value")
+```
+Interpretation: The time series plot will show the trend in PM₂.5 concentrations, indicating whether levels have increased, decreased, or remained stable over time. Significant changes or patterns can provide insights into the effectiveness of air quality regulations, changes in industrial activity, or seasonal variations in pollution.
+
+# Part 9: Scatter plot matrix to visualize pairwise relationships between pollutants
+
+### Task Details: To create a scatter plot matrix that visualizes the pairwise relationships between four key air pollutants: CO, Ozone, NO2, and PM2.5.
+```{r}
+pairs(
+  data %>% select(`CO.AQI.Value`, `Ozone.AQI.Value`, `NO2.AQI.Value`, `PM2.5.AQI.Value`),
+  main = "Scatter Plot Matrix of Pollutants",
+  pch = 19,
+  col = my_colors[1]
+)
+```
+Intrepretation: The scatter plot matrix visualizes pairwise relationships between CO, Ozone, NO2, and PM2.5 AQI values. It helps identify potential correlations between pollutants, where patterns like clustering or linear alignment indicate relationships. Outliers and random spreads may suggest anomalies or a lack of correlation. This visualization provides an initial exploration of how pollutants interact, guiding further analysis.
+
+# Part 10: Distribution of Pollutants Using Density Plot
+
+### Task Details: To visualize the distribution of AQI values for CO, Ozone, NO2, and PM2.5 using density plots.
+```{r}
+data %>%
+  select(`CO.AQI.Value`, `Ozone.AQI.Value`, `NO2.AQI.Value`, `PM2.5.AQI.Value`) %>%
+  melt() %>%
+  ggplot(aes(x = value, fill = variable)) +
+  geom_density(alpha = 0.5) +
+  theme_minimal() +
+  scale_fill_manual(values = my_colors) +
+  ggtitle("Density Plot of Pollutants") +
+  xlab("AQI Value") +
+  ylab("Density")
+```
+
+Interpretation: The density plot shows the distribution of AQI values for CO, Ozone, NO2, and PM2.5. The spread of each curve indicates how concentrated or varied the AQI levels are. Peaks suggest where the AQI values are most frequent, while the width of the curves reflects variability. This plot helps in understanding the typical range of AQI values for each pollutant and whether the distributions are skewed or normally distributed.
+
+# Part 11: Time Series Plot of AQI Over the Years
+
+### Task Details: to visualize the trend of AQI values over time using a time series plot.
+```{r}
+ggplot(data, aes(x = Date, y = `AQI.Value`)) +
+  geom_line(color = "darkblue") +
+  theme_minimal() +
+  ggtitle("Time Series of AQI Over the Years") +
+  xlab("Date") +
+  ylab("AQI Value")
+```
+Interpretation: The time series plot reveals how AQI values have fluctuated over the recorded period. By observing the line's movement, you can identify any upward or downward trends, seasonal patterns, or significant changes in air quality. Peaks or dips in the graph may indicate periods of poor or improved air quality, respectively, and can help in further analysis of the factors influencing these changes.
+
+# Part 12: Heatmap for Daily AQI Levels Over Time
+
+# Task Details: To visualize the AQI levels across years and months
+```{r}
+data %>%
+  mutate(Year = format(as.Date(Date), "%Y"), Month = format(as.Date(Date), "%m")) %>%
+  ggplot(aes(x = Month, y = Year, fill = `AQI.Value`)) +
+  geom_tile() +
+  scale_fill_gradient(low = "blue", high = "red") +
+  theme_minimal() +
+  ggtitle("Heatmap of Daily AQI Levels") +
+  xlab("Month") +
+  ylab("Year")
+```
+Interpretation: The heatmap provides a visual representation of the daily AQI levels across different months and years. The color gradient, ranging from blue (lower AQI values) to red (higher AQI values), helps in identifying periods with poor air quality. By observing the heatmap, you can easily spot seasonal trends, such as certain months with consistently higher AQI levels (indicated by more red) or improvements in air quality over the years (indicated by a shift towards more blue tones). This visualization allows for quick identification of air quality patterns over time.
+
+# Part 13: Pollutants Over Time and Violin Plot
+
+### Task 13.1: Facet Grid for Pollutants Over Time
+
+### Task Details: To analyze how the AQI values of different pollutants have changed over time.
+```{r}
+data %>%
+  pivot_longer(cols = c(`CO.AQI.Value`, `Ozone.AQI.Value`, `NO2.AQI.Value`, `PM2.5.AQI.Value`), names_to = "Pollutant", values_to = "Value") %>%
+  ggplot(aes(x = Date, y = Value, color = Pollutant)) +
+  geom_line() +
+  facet_grid(rows = vars(Pollutant)) +
+  theme_minimal() +
+  ggtitle("Pollutant Levels Over Time") +
+  xlab("Date") +
+  ylab("AQI Value")
+```
+Interpretation: This visualization presents the levels of different pollutants over time, with each pollutant represented by a separate line in distinct facets. By utilizing the facet grid, it becomes easy to compare the trends of `CO.AQI.Value`, `Ozone.AQI.Value`, `NO2.AQI.Value`, and `PM2.5.AQI.Value` on the same timeline. Each plot illustrates how the AQI values of these pollutants fluctuate, allowing for an examination of patterns, peaks, and troughs. This can help identify periods of higher pollution and the relative behavior of each pollutant over time, facilitating a better understanding of air quality dynamics.
+
+### Task 13.2: Violin Plot for Pollutant Values
+
+### Task Details: To create a violin plot to visualize the distribution of air quality index (AQI) values for different pollutants.
+```{r}
+data %>%
+  pivot_longer(cols = c(`CO.AQI.Value`, `Ozone.AQI.Value`, `NO2.AQI.Value`, `PM2.5.AQI.Value`), names_to = "Pollutant", values_to = "Value") %>%
+  ggplot(aes(x = Pollutant, y = Value, fill = Pollutant)) +
+  geom_violin(trim = FALSE) +
+  theme_minimal() +
+  ggtitle("Violin Plot of Pollutant Values") +
+  xlab("Pollutant") +
+  ylab("AQI Value") +
+  scale_fill_manual(values = my_colors)
+```
+Interpretation: The violin plot provides a comprehensive view of the distribution of AQI values for each pollutant: CO, Ozone, NO2, and PM2.5. The width of each violin indicates the density of AQI values, allowing us to see where values are concentrated. For instance, a wider section of the violin suggests a higher frequency of that AQI value, while the shape reveals insights into the variability and skewness of the data. This visualization helps identify which pollutants have higher or lower AQI levels and the overall variability in their values, facilitating comparisons across pollutants and highlighting areas for further investigation in air quality management.
+
+# Part 14: Correlation Matrix Heatmap
+
+### Task Details: To visualize the correlation between different pollutants using a heatmap. The code computes the correlation matrix for the selected air quality indices: CO, Ozone, NO2, and PM2.5.
+```{r}
+correlation_matrix <- cor(data %>% select(`CO.AQI.Value`, `Ozone.AQI.Value`, `NO2.AQI.Value`, `PM2.5.AQI.Value`), use = "complete.obs")
+melted_cor <- melt(correlation_matrix)
+
+ggplot(data = melted_cor, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1, 1), space = "Lab", 
+                       name="Correlation") +
+  theme_minimal() +
+  ggtitle("Correlation Matrix Heatmap of Pollutants") +
+  xlab("Pollutants") +
+  ylab("Pollutants")
+```
+Interpretation: The correlation matrix heatmap visually represents the relationships between the different pollutants. Each cell in the heatmap indicates the correlation coefficient between two pollutants, with values ranging from -1 to 1. A value close to 1 indicates a strong positive correlation (as one pollutant increases, so does the other), while a value close to -1 indicates a strong negative correlation (as one pollutant increases, the other decreases). Values around 0 suggest little to no correlation. By observing the heatmap, we can identify which pollutants are closely related, guiding further analysis or research into the underlying factors affecting air quality. For instance, if CO and PM2.5 show a strong positive correlation, it may suggest similar sources or environmental conditions affecting both pollutants.
+
+# Part 15: AQI Analysis: Threshold Counts, Pollutant Contributions, and Relationships
+
+### Task 15.1: Bar Plot for Count of Days Above a Certain AQI Threshold
+
+### Task Details: To calculate the number of days where the AQI values exceed a specified threshold (100 in this case). It classifies days as "Above Threshold" or "Below Threshold," then summarizes the count for each category and visualizes the result using a bar chart.
+```{r}
+threshold <- 100  # Define the AQI threshold
+data %>%
+  mutate(Above_Threshold = ifelse(`AQI.Value` > threshold, "Above Threshold", "Below Threshold")) %>%
+  group_by(Above_Threshold) %>%
+  summarise(Count = n()) %>%
+  ggplot(aes(x = Above_Threshold, y = Count, fill = Above_Threshold)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  ggtitle("Count of Days Above AQI Threshold") +
+  xlab("AQI Status") +
+  ylab("Count of Days") +
+  scale_fill_manual(values = my_colors)
+```
+Interpretation: The resulting bar chart displays the distribution of days classified as either "Above Threshold" or "Below Threshold" based on the AQI values. A significant count of days above the threshold indicates poor air quality and potential health risks to the population. Conversely, a higher count of days below the threshold suggests better air quality conditions.
+
+### Task 15.2: Polar Area Plot of Pollutant Contribution
+
+### Task Details: To summarize the total AQI values for different pollutants (CO.AQI.Value, Ozone.AQI.Value, NO2.AQI.Value, and PM2.5.AQI.Value) and visualizes their contributions using a polar area plot (also known as a pie chart). Each pollutant's total AQI value is represented as a portion of the whole.
+```{r}
+data %>%
+  pivot_longer(cols = c(`CO.AQI.Value`, `Ozone.AQI.Value`, `NO2.AQI.Value`, `PM2.5.AQI.Value`), names_to = "Pollutant", values_to = "Value") %>%
+  group_by(Pollutant) %>%
+  summarise(Total_Value = sum(Value, na.rm = TRUE)) %>%
+  ggplot(aes(x = "", y = Total_Value, fill = Pollutant)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  theme_minimal() +
+  ggtitle("Polar Area Plot of Pollutant Contribution") +
+  ylab("Total AQI Value") +
+  scale_fill_manual(values = my_colors)
+```
+Interpretation: The polar area plot illustrates the relative contributions of each pollutant to the overall air quality index. This visualization helps identify which pollutants contribute most significantly to the AQI levels. Understanding these contributions can guide regulatory efforts and public awareness campaigns to address air quality issues more effectively.
+
+### Task 15.3: Scatter Plot of Ozone vs NO2 AQI Values
+
+### Task Details: To create a scatter plot to visualize the relationship between Ozone AQI values and NO2 AQI values. A linear regression line is added to the plot to highlight the trend in the data.
+```{r}
+ggplot(data, aes(x = `Ozone.AQI.Value`, y = `NO2.AQI.Value`)) +
+  geom_point(color = "purple", alpha = 0.6) +
+  theme_minimal() +
+  ggtitle("Scatter Plot of Ozone vs NO2 AQI Values") +
+  xlab("Ozone AQI Value") +
+  ylab("NO2 AQI Value") +
+  geom_smooth(method = "lm", se = FALSE, color = "red")  # Add regression line
+```
+Interpretation: The scatter plot reveals the correlation between Ozone and NO2 AQI values, with the regression line indicating the direction and strength of their relationship. If a positive correlation is observed, it suggests that as Ozone levels increase, NO2 levels may also rise, which could indicate a common source of pollution or similar environmental conditions affecting both pollutants. Analyzing these relationships is vital for understanding the interactions between different air pollutants and their combined impact on air quality.
